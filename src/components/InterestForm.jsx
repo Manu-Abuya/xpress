@@ -13,7 +13,15 @@ const InterestForm = ({ setIsOpen }) => {
     vehicleModel: "",
   });
 
-  const { fullName, phoneNumber, email, vehicleModel, currentValuation, yearOfManufacture, typeOfCover } = formData;
+  const {
+    fullName,
+    phoneNumber,
+    email,
+    vehicleModel,
+    currentValuation,
+    yearOfManufacture,
+    typeOfCover,
+  } = formData;
 
   const handleChange = (event) => {
     setFormData({ ...formData, [event.target.name]: event.target.value });
@@ -21,21 +29,26 @@ const InterestForm = ({ setIsOpen }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-   
+
     let myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/xml");
 
-    let raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">\r\n<soap:Header xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">\r\n</soap:Header>\r\n<soapenv:Body>\r\n<ws:registerCustomerInput xmlns:ws="http://ws.britam/">\r\n<NAME>${fullName}</NAME>\r\n<PHONENUMBER>${phoneNumber}</PHONENUMBER>\r\n<EMAIL>${email}</EMAIL>\r\n<VEHICLEMODEL>${vehicleModel}</VEHICLEMODEL>\r\n<YEAROFMANUFACTURE>${yearOfManufacture}</YEAROFMANUFACTURE>\r\n<CURRENTVALUATION>${currentValuation}</CURRENTVALUATION>\r\n<TYPEOFCOVER>${typeOfCover}</TYPEOFCOVER>\r\n</ws:registerCustomerInput>\r\n</soapenv:Body>\r\n</soapenv:Envelope>`;
+    let raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">\r\n<soap:Header xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">\r\n</soap:Header>\r\n<soapenv:Body>\r\n<ws:registerCustomer xmlns:ws="http://ws.britam/">\r\n<arg0>\r\n<NAME>${fullName}</NAME>\r\n<PHONENUMBER>${phoneNumber}</PHONENUMBER>\r\n<EMAIL>${email}</EMAIL>\r\n<VEHICLEMODEL>${vehicleModel}</VEHICLEMODEL>\r\n<YEAROFMANUFACTURE>${yearOfManufacture}</YEAROFMANUFACTURE>\r\n<CURRENTVALUATION>${currentValuation}</CURRENTVALUATION>\r\n<TYPEOFCOVER>${typeOfCover}</TYPEOFCOVER>\r\n</arg0>\r\n</ws:registerCustomer>\r\n</soapenv:Body>\r\n</soapenv:Envelope>`;
     let requestOptions = {
-      mode: 'no-cors',
-      method: 'POST',
+      mode: "no-cors",
+      method: "POST",
       headers: myHeaders,
       body: raw,
-      redirect: 'follow'
+      redirect: "follow",
     };
 
-    fetch("http://10.10.4.62:9005/AutoExpress/ProxyService/AutoExpressPipelineProxyService", requestOptions)
-      .then(response => {
+    //fetch("http://10.10.4.62:9005/AutoExpress/ProxyService/AutoExpressPipelineProxyService", requestOptions)
+
+    fetch(
+      "https://miniapps.britam.com/AutoExpress/ProxyService/AutoExpressPipelineProxyService",
+      requestOptions
+    )
+      .then((response) => {
         response.text();
         setIsOpen(true);
         setFormData({
@@ -49,9 +62,55 @@ const InterestForm = ({ setIsOpen }) => {
           vehicleModel: "",
         });
       })
-      .then(result => console.log(result))
-      .catch(error => console.log('error', error));
+      .then((result) => {
+        console.log(result);
+        sendMail();
+      })
+      .catch((error) => console.log("error", error));
+  };
+
+  function sendMail() {
+    var today = new Date().toISOString().slice(0, 10);
+    var myHeaderss = new Headers();
+    myHeaderss.append(
+      "Authorization",
+      "App d5a4cb45440564d00ebba7c4e1d94312-3b4b8c25-849f-444c-a0e5-de10108b18e3"
+    );
+
+    var formdata = new FormData();
+    formdata.append("from", "directsales@britam.com");
+    formdata.append("to", "directsales@britam.com");
+    formdata.append(
+      "subject",
+      "Auto-Express Notification Email."
+    );
+    formdata.append(
+      "text",
+      `Dear Team,\n
+  You have received a new lead form submission from a potential customer who is interested in our insurance services. The customer details (as contained in the form) are as follows:\n
+  Name: ${fullName}
+  Email: ${email}
+  Phone: ${phoneNumber}
+  Date submitted: ${today}\n
+  As the assigned sales agent for this lead, we kindly request that you reach out to the customer as soon as 
+  possible to provide further assistance and answer any questions they may have. We understand that prompt 
+  follow-up is crucial in securing new business,and we trust that you will provide the highest level of service to this potential customer.\n
+  If you have any further questions or concerns,please do not hesitate to contact us at 0705 100 100 We are always here to help.\n
+  Thank you for your dedication to our company and for your continued efforts in driving our business forward.`
+    );
+
+    var requestOptionss = {
+      method: "POST",
+      headers: myHeaderss,
+      body: formdata,
+      redirect: "follow",
     };
+
+    fetch("https://6qkrd.api.infobip.com/email/3/send", requestOptionss)
+      .then((response) => response.text())
+      .then((result) => console.log(result))
+      .catch((error) => console.log("error", error));
+  }
 
   return (
     <article className="h-screen relative container lg:overflow-hidden bg-cover bg-no-repeat m-auto bg-gradient-to-r from-cyan-500 to-blue-700 flex items-center">
@@ -175,7 +234,8 @@ const InterestForm = ({ setIsOpen }) => {
               className="block uppercase tracking-wide text-sky-500 text-xs font-bold mb-2"
               htmlFor="grid-year"
             >
-              Year of Manufacture <span className="text-red-600">*</span>
+              Year of Manufacture
+              {/* <span className="text-red-600">*</span> */}
             </label>
             <div className="relative">
               <select
@@ -184,7 +244,6 @@ const InterestForm = ({ setIsOpen }) => {
                 id="grid-year"
                 value={yearOfManufacture}
                 onChange={handleChange}
-                required
               >
                 <option value="">Choose an option</option>
                 <option value="2023">2023</option>
@@ -215,7 +274,13 @@ const InterestForm = ({ setIsOpen }) => {
                 </svg>
               </div>
             </div>
-            {yearOfManufacture === "Other" ? <span className="text-xs italic text-red-600 lg:w-64" >Note: Cars older than 15 years require a mechanical evaluation.</span> : ""}
+            {yearOfManufacture === "Other" ? (
+              <span className="text-xs italic text-red-600 lg:w-64">
+                Note: Cars older than 15 years require a mechanical evaluation.
+              </span>
+            ) : (
+              ""
+            )}
           </div>
 
           <div className="w-full md:w-1/2 px-3">
